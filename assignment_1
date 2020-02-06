@@ -13,15 +13,14 @@ class Item:
         print("ID: {}, Benefit: {}, Weight: {}".format(self.id, self.benefit, self.weight))
 
 
-
 # Create the data
 with open('data.txt') as f:
-  read_data = f.read().splitlines()
+    read_data = f.read().splitlines()
 
 items = []
 for l in read_data:
-    i,b,w = l.split(' ')
-    items.append(Item(i,b,w))
+    i, b, w = l.split(' ')
+    items.append(Item(i, b, w))
 
 [i.print() for i in items]
 
