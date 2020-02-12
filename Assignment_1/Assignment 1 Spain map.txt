@@ -24,7 +24,7 @@ Valencia Alicante 166
 Valencia Castellon 74
 Valencia Cuenca 199
 Castellon Tarragona 187
-Castellon	Teruel 144
+Castellon Teruel 144
 Teruel Cuenca 148
 Teruel Zaragoza 171
 Tarragona Barcelona 99
