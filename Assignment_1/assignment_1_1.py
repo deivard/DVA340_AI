@@ -1,9 +1,8 @@
-# import sys
-# from queue import PriorityQueue
+
 from collections import deque
 from tabulate import tabulate
 import time
-from anytree import NodeMixin, RenderTree
+import tracemalloc
 
 
 class Item:
@@ -96,7 +95,7 @@ def search(items, max_weight, algorithm="BFS"):
 
             queue.append(takent)
 
-    print("Found {} solutions.".format(len(solutions)))
+    # print("Found {} solutions.".format(len(solutions)))
     return highest_benefit_solution
 
 
@@ -112,19 +111,29 @@ if __name__ == "__main__":
 
     print("Breadth first search\n")
     t_start = time.time()
-    solution = search(items, 420, "BFS")
+    for i in range(1000):
+        tracemalloc.start()
+        solution = search(items, 420, "BFS")
+        current, peak = tracemalloc.get_traced_memory()
+        print(f"Current memory usage is {current / 10 ** 6}MB; Peak was {peak / 10 ** 6}MB")
+        tracemalloc.stop()
     t_end = time.time()
     print("\nHighest benefit solution:")
-    solution.print(items)
-    print("Elapsed time: {}\n".format(t_end-t_start))
+    # solution.print(items)
+    print("Elapsed time: {}\n".format((t_end-t_start)/1000))
 
     print("Depth first search:")
     t_start = time.time()
-    solution = search(items, 420, "DFS")
+    for i in range(1000):
+        tracemalloc.start()
+        solution = search(items, 420, "DFS")
+        current, peak = tracemalloc.get_traced_memory()
+        print(f"Current memory usage is {current / 10 ** 6}MB; Peak was {peak / 10 ** 6}MB")
+        tracemalloc.stop()
     t_end = time.time()
     print("\nHighest benefit solution:")
-    solution.print(items)
-    print("Elapsed time: {}".format(t_end-t_start))
+    # solution.print(items)
+    print("Elapsed time: {}".format((t_end-t_start)/1000))
 
 
 
