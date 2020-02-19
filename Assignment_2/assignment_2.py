@@ -1,4 +1,3 @@
-import numpy as np
 import time
 
 
@@ -106,24 +105,25 @@ if __name__ == "__main__":
 
     sudokus = []
     board = []
-    id = None
+    id = 0
     parse = False
     for l in read_data:
         if l.startswith("SUDOKU"):
             if len(board):
                 sudokus.append(Sudoku(id, board.copy()))
-            id = l[len(l)-1]
+            id += 1  # l[len(l)-1]
             board = []
             parse = True
             continue
 
-        # Skip blank lines
-        if len(l) < 2:
+        # Skip blank lines and "EOF"
+        if len(l) < 5:
             parse = False
 
         if parse:
             row = [int(c) for c in l]
             board.append(row)
+    sudokus.append(Sudoku(id, board.copy()))
 
     t_start = time.time()
     for s in sudokus:
@@ -135,6 +135,7 @@ if __name__ == "__main__":
     for s in sudokus:
         s.print()
 
+    print("Elapsed time: {}\n".format(t_end - t_start))
 
 
 
