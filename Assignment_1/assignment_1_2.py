@@ -1,6 +1,7 @@
 from queue import PriorityQueue
 import time
 
+
 class City:
     def __init__(self, name, ):
         self.name = name
