@@ -35,32 +35,34 @@ class Individual:
     def __repr__(self):
         return f"Distance: {self.fitness} \nRoute: {self.route}"
 
-    def mutate(self, uber=False):
+    def mutate(self, type):
         # print("Mutating")
-        if uber:
-            self.route = self.route[:len(self.route)//2] + self.route[len(self.route)//2:]
-        else:
+        if type == "revseq":
+            # print("downs")
+            r1 = random.randint(1, len(self.route)-2)
+            r2 = random.randint(r1, len(self.route)-1)
+            self.route = self.route[:r1] + self.route[r2-1:r1-1:-1] + self.route[r2:]
+        elif type == "swap":
             r1 = random.randint(1, len(self.route)-2)
             r2 = random.randint(1, len(self.route)-2)
             self.route[r1], self.route[r2] = self.route[r2], self.route[r1]
             self.evaluate_fitness()
 
 
-
-def breed(parent_a, parent_b):
-    MUTATION_CHANCE = 0.3
-    UBER_MUTATION_CHANCE = 0.1
+def breed(parent_a, parent_b, adaptive_mutation_rate):
+    MUTATION_CHANCE = 0.4 + adaptive_mutation_rate
+    UBER_MUTATION_CHANCE = 0.1 #+ adaptive_mutation_rate * 0.1
 
     o1, o2 = crossover(parent_a, parent_b)
     # Mutate
     if random.random() <= MUTATION_CHANCE:
-        o1.mutate()
+        o1.mutate("swap")
     if random.random() <= MUTATION_CHANCE:
-        o2.mutate()
+        o2.mutate("swap")
     if random.random() <= UBER_MUTATION_CHANCE:
-        o1.mutate(uber=True)
+        o1.mutate("revseq")
     if random.random() <= UBER_MUTATION_CHANCE:
-        o1.mutate(uber=True)
+        o1.mutate("revseq")
 
     return [o1, o2]
 
@@ -210,7 +212,11 @@ def create_random_population(cities, population_size):
 
 
 def main():
-    POPULATION_SIZE = 100
+    adaptive_mutation_rate = 0
+    breed_offset = 0
+    POPULATION_SIZE = 1000
+    ELITISM = 100
+    NUM_ALPHAS = 50
     cities = []
     # Load the data
     with open("Assignment 3 berlin52.tsp") as f:
@@ -232,6 +238,8 @@ def main():
 
     generation = 0
     best_individual = population[0]
+    prev_best = population[0].fitness
+    generations_without_improvement = 0
     # Termination criteria satisfied?
     while True:
         generation += 1
@@ -240,19 +248,59 @@ def main():
         print(f"Gen {generation} - Best in population: {population[0].fitness}")
         # print(population)
         new_generation = []
-        # Select the 8 best parents according to fitness and two random individuals
-        r1, r2 = random.randint(8,POPULATION_SIZE-1), random.randint(8,POPULATION_SIZE-1)
-        alphas = population[:10]# + [population[r1]]# + [population[r2]]#(POPULATION_SIZE//4)]
+        # Select the NUM_ALPHAS best parents according to fitness and two random individuals
+        r1, r2 = random.randint(NUM_ALPHAS,POPULATION_SIZE-1), random.randint(NUM_ALPHAS,POPULATION_SIZE-1)
+        alphas = population[:NUM_ALPHAS]#-2] + [population[r1]] + [population[r2]]#(POPULATION_SIZE//4)]
+
+        # Roulette wheel selection
+        # fit_sum = 0
+        # for i in population:
+        #     fit_sum += (1/i.fitness)
+        # # Probabilities
+        # prob = []
+        # prev_prob = 0
+        # for i in population:
+        #     i_prob = prev_prob + ((1/i.fitness)/fit_sum)
+        #     prob.append(i_prob)
+        #     prev_prob = i_prob
+        # selected_individual = population[0]
+        # rand_num = random.random()
+        # for i in range(len(prob[:-1])-1):
+        #     if rand_num > prob[i] and rand_num < prob[i+1]:
+        #         selected_individual = population[i]
+
         # Queue the sexy music and let the breeding begin
-        for i, individual in enumerate(population[:-1]):
-            new_generation.extend(breed(alphas[i % (len(alphas)-1)], individual))
-            # new_generation.extend(breed(alphas[i % 9], individual))
+        for i, individual in enumerate(population[::-1]):
+        # for i in range(0, len(population)//2):
+            # selected_individual = population[0]
+            # rand_num = random.random()
+            # for j in range(len(prob[:-1]) - 1):
+            #     if prob[j] < rand_num < prob[j + 1]:
+            #         selected_individual = population[j]
+            #         break
+            # rand_individual = population[random.randint(0, len(population)-1)]
+            # new_generation.extend(breed(population[i+1], individual))#alphas[i % (len(alphas)-1)], individual))
+            new_generation.extend(breed(alphas[(i+breed_offset) % (len(alphas)-1)], individual, adaptive_mutation_rate))
+            # new_generation.extend(breed(alphas[0], alphas[1]))
+            # new_generation.extend(breed(population[i], individual))
+            # new_generation.extend(breed(selected_individual, rand_individual))
 
-        elite = sorted(new_generation, key=lambda i: i.fitness)[:15]
+        # population = sorted((new_generation+population),key=lambda i: i.fitness)[:POPULATION_SIZE]
+        new_generation.sort(key=lambda i: i.fitness)
         # Select the 75 best from new generation and 25 best from old generation
-        population = elite + population[:-len(elite)] #[:POPULATION_SIZE//2] + population[:POPULATION_SIZE//2] #[:(POPULATION_SIZE // 4) * 3] + population[:POPULATION_SIZE // 4]  #sorted(new_generation + population, key=lambda i: i.fitness)[:200]
+        population = population[:ELITISM] + new_generation[:len(population)-ELITISM] #alphas[:ELITISM] + new_generation[:len(population)-len(alphas[:ELITISM])] #[:POPULATION_SIZE//2] + population[:POPULATION_SIZE//2] #[:(POPULATION_SIZE // 4) * 3] + population[:POPULATION_SIZE // 4]  #sorted(new_generation + population, key=lambda i: i.fitness)[:200]
+        # population = new_generation[:ELITISM] + population[:len(population)-ELITISM] #alphas[:ELITISM] + new_generation[:len(population)-len(alphas[:ELITISM])] #[:POPULATION_SIZE//2] + population[:POPULATION_SIZE//2] #[:(POPULATION_SIZE // 4) * 3] + population[:POPULATION_SIZE // 4]  #sorted(new_generation + population, key=lambda i: i.fitness)[:200]
+        # population = new_generation[:POPULATION_SIZE] # + population[:len(population)-ELITISM] #alphas[:ELITISM] + new_generation[:len(population)-len(alphas[:ELITISM])] #[:POPULATION_SIZE//2] + population[:POPULATION_SIZE//2] #[:(POPULATION_SIZE // 4) * 3] + population[:POPULATION_SIZE // 4]  #sorted(new_generation + population, key=lambda i: i.fitness)[:200]
 
-
+        if population[0].fitness == prev_best:
+            generations_without_improvement += 1
+        else:
+            generations_without_improvement = 0
+        adaptive_mutation_rate = 0.1 * generations_without_improvement
+        if generations_without_improvement > 10:
+            # breed_offset += 1
+            print(f"Adaptive mutation rate: {adaptive_mutation_rate}")
+        prev_best = population[0].fitness  # sorted(population,key=lambda i: i.fitness)[0]
 
 
 if __name__ == '__main__':
