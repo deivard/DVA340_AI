@@ -1,7 +1,5 @@
-import argparse
 import random
 from math import sqrt
-from functools import reduce
 import copy
 
 
@@ -50,21 +48,20 @@ class Ant:
                 probabilities.append({"to_city": e["to_city"], "probability": (e["pheromone"]**alpha) * ((1/e["distance"])**beta)})
 
         sum_ = sum([p["probability"] for p in probabilities])
-                   # (lambda p,_: p, probabilities)["probability"]
 
         for p in probabilities:
             p["probability"] = p["probability"] / sum_
 
         probabilities.sort(key=lambda p: p["probability"], reverse=True)
+        for i in range(1, len(probabilities)):
+            probabilities[i]["probability"] = probabilities[i-1]["probability"] + probabilities[i]["probability"]
 
-
-        fix this
         dice = random.random()
-        for p in probabilities:
-            if dice > p["probability"]:
-                return p["to_city"]
+        for i in range(len(probabilities)-1, 0, -1):
+            if probabilities[i]["probability"] > dice > probabilities[i - 1]["probability"]:
+                return probabilities[i]["to_city"]
 
-        return None
+        return probabilities[0]["to_city"] if len(probabilities) else None
 
 
 def distance(a, b):
@@ -77,30 +74,29 @@ def calc_distances(city_edges, cities_ref):
             e["distance"] = distance(cities_ref[i], cities_ref[e["to_city"]])
 
 
-def initialize_ants(num_ants, cities, city_edges_ref, random_names):
+def initialize_ants(num_ants, city_edges_ref, random_names):
     return [Ant(random_names[random.randint(0, len(random_names)-1)],
-                random.randint(0, len(cities)-1),
-                city_edges_ref) for _ in range(num_ants)]
+                0, city_edges_ref) for _ in range(num_ants)]
 
 
 def update_pheromone(ants, city_edges, evaporation_rate):
-    for i,ce in enumerate(city_edges):
+    for ce in city_edges:
         for j in range(len(ce)):
-            sum_p = 0
-            for ant in ants:
-                if ant.has_visited_edge(i, j):
-                    sum_p += 1/ant.distance_traveled
-            ce[j]["pheromone"] = (1 - evaporation_rate) * ce[j]["pheromone"] + sum_p
+            ce[j]["pheromone"] = (1 - evaporation_rate) * ce[j]["pheromone"]  # + sum_p
+
+    for ant in ants:
+        for i in range(1, len(ant.visited)):
+            city_edges[ant.visited[i-1]][ant.visited[i]]["pheromone"] += 1/ant.distance_traveled
+            city_edges[ant.visited[i]][ant.visited[i-1]]["pheromone"] += 1/ant.distance_traveled
 
 
 def main():
-    ALPHA = 0.5
-    EVAPORATION_RATE = 0.2
-    BETA = 0.5
+    ALPHA = 1.3
+    EVAPORATION_RATE = 0.3
+    BETA = 1.5
     cities = []
-    city_edges = [{"to_city": i, "distance": 0, "pheromone": 1} for i in range(52)]
+    city_edges = [{"to_city": i, "distance": 0, "pheromone": 4} for i in range(52)]
     city_edges = [copy.deepcopy(city_edges) for _ in range(52)]
-    # random_names = []
     with open("orc_names.txt") as f:
         random_names = [line.rstrip("\n") for line in f.readlines()]
     # Load the data
@@ -113,9 +109,8 @@ def main():
 
     calc_distances(city_edges, cities)
 
-
     while True:
-        antz = initialize_ants(100, cities, city_edges, random_names)
+        antz = initialize_ants(50, city_edges, random_names)
         for _ in range(len(cities)):
             for ant in antz:
                 ant.move(ALPHA, BETA)
