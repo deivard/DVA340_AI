@@ -1,11 +1,11 @@
-#!/usr/bin/python           # This is server.py file
+#!/usr/bin/python           # This is spaghett_server.py file
 
 import socket  # Import socket module
 import numpy as np
 import time
 from multiprocessing.pool import ThreadPool
 import os
-
+from assignment_4 import MancalaAI as Skynet
 
 def receive(socket):
     msg = ''.encode()  # type: str
@@ -23,13 +23,14 @@ def send(socket, msg):
 
 
 # VARIABLES
-playerName = 'Your player name'
+playerName = 'Johannes_Deivard'
 host = '127.0.0.1'
 port = 30000  # Reserve a port for your service.
 s = socket.socket()  # Create a socket object
 pool = ThreadPool(processes=1)
 gameEnd = False
 MAX_RESPONSE_TIME = 5
+mancala_ai = Skynet(2, [])
 
 print('The player: ' + playerName + ' starts!')
 s.connect((host, port))
@@ -56,7 +57,7 @@ while not gameEnd:
         send(s, playerName)
 
     if data == 'E':
-        playerPoints, otherPoints = [int(i) for i in data.split()[1:3]]
+        # playerPoints, otherPoints = [int(i) for i in data.split()[1:3]]
         gameEnd = 1
 
     if len(data) > 1:
@@ -76,6 +77,7 @@ while not gameEnd:
         # example: move = '1';  Possible moves from '1' to '6' if the game's rules allows those moves.
         # TODO: Change this
         ################
-        move = '0'
+        mancala_ai.update_state(board, playerTurn)
+        move = str(mancala_ai.get_best_move())
         ################
         send(s, move)
