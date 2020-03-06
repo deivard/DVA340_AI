@@ -5,9 +5,19 @@ import numpy as np
 import time
 from datetime import datetime
 from multiprocessing.pool import ThreadPool
-import os
 import random
+import argparse
 from assignment_4 import MancalaAI as Skynet
+
+
+parser = argparse.ArgumentParser()
+parser.add_argument('--adversarial', dest='adversarial', action='store_const',
+                    default=True,
+                    help='Tells the client that it train in adversarial mode against another AI. '
+                         'This will make the AI wait for the server to assign it a player number '
+                         'instead of assuming that it is player 2.')
+
+args = parser.parse_args()
 
 
 class Individual:
@@ -70,11 +80,13 @@ def send(socket, msg):
 
 # VARIABLES
 playerName = 'Big_Brain_AI'
+player_num = 2  # Default is player 2
 host = '127.0.0.1'
 port = 30000  # Reserve a port for your service.
 s = socket.socket()  # Create a socket object
 pool = ThreadPool(processes=1)
 MAX_RESPONSE_TIME = 10
+
 
 # GA Variables
 ELITISM = 3
@@ -88,6 +100,14 @@ generation_best = []
 print('The player: ' + playerName + ' starts!')
 s.connect((host, port))
 print('The player: ' + playerName + ' connected!')
+
+if args.adversarial:
+    print(f"Waiting to be assigned a player number . . .")
+    data = receive(s)
+    if data[0] != "P":
+        raise Exception(f"Expected a player number. Got: {data}")
+    else:
+        player_num = int(data[1])
 
 generation = -1
 prev_best = -9000
@@ -150,9 +170,9 @@ while True:
                 send(s, playerName)
 
             if data[0] == 'E':
-                player_points, other_points = [int(i) for i in data.split()[1:3]]
-                game_values.append(player_points - other_points)
-                print(f"Game {games_played+1} ended. (Player) {player_points} - {other_points} (Opponent)")
+                player_points = [int(i) for i in data.split()[1:3]]
+                game_values.append(player_points[player_num] - player_points[(player_num % 2 + 1)])
+                print(f"Game {games_played+1} ended. (Player 1) {player_points[0]} - {player_points[1]} (Player 2)")
                 games_played += 1
 
 
