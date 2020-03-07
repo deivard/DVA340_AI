@@ -30,7 +30,7 @@ s = socket.socket()  # Create a socket object
 pool = ThreadPool(processes=1)
 gameEnd = False
 MAX_RESPONSE_TIME = 5
-mancala_ai = Skynet(2, [])
+mancala_ai = Skynet(2, [0.52, -4.348, 1.864, -1.353, 1.143, 3.088, -0.647, -1.921, 2.91, -2.71, 1.154, -1.42, 2.503, -0.653])
 
 print('The player: ' + playerName + ' starts!')
 s.connect((host, port))
@@ -56,7 +56,7 @@ while not gameEnd:
     if data == 'N':
         send(s, playerName)
 
-    if data == 'E':
+    if data[0] == 'E':
         # playerPoints, otherPoints = [int(i) for i in data.split()[1:3]]
         gameEnd = 1
 

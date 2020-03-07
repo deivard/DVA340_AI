@@ -1,3 +1,5 @@
+from math import inf
+import copy
 
 
 class GameState:
@@ -11,17 +13,21 @@ class GameState:
         self.winner = 0 if self.board[6] == self.board[13] else 1 if self.board[6] > self.board[13] else 2
         return self.winner
 
-    def get_available_moves(self):
-        return [i for i in self.board[7*(self.player_turn-1):6*(self.player_turn-1)] if self.board[i] != 0]
+    def get_available_moves(self, player_num=None):
+        if player_num is None:
+            player_num = self.player_turn
+        return [i for i in range(7*(player_num-1), (7*player_num)-1) if self.board[i] != 0]
 
     def print_board(self):
-       print("  ", end="")
-       for i in range(12,6,-1):
-          print(self.board[i], end=" ")
-       print("\n" + str(self.board[13]) + "          " + str(self.board[6]) + "\n   ")
-       for i in range(6):
-          print(self.board[i], end=" ")
-       print("\n")
+        print("  ", end="")
+        for i in range(12, 6, -1):
+            print(self.board[i], end=" ")
+        print(" <- Player 2", end="")
+        print("\n" + str(self.board[13]) + "             " + str(self.board[6]) + "\n  ", end="")
+        for i in range(6):
+            print(self.board[i], end=" ")
+        print(" <- Player 1", end="")
+        print("")
 
     def opposite_player(self, num=None):
         if num is None:
@@ -114,13 +120,19 @@ class GameState:
 
 
 class MancalaAI:
-    def __init__(self, player_num, game_state, utility_weights):
+    def __init__(self, player_num, utility_weights, game_state=None):
         self.utility_weights = utility_weights
         self.player_num = player_num
         self.game_state = game_state
 
+    def update_state(self, board, player_turn):
+        if self.game_state is None:
+            self.game_state = GameState(board, player_turn)
+        else:
+            self.game_state.board = board
+            self.game_state.player_turn = player_turn
 
-    def heuristic(self):
+    def heuristic(self, game_state):
         """
         H0 = First valid move
         H1 = How far ahead of opponent I am
@@ -131,22 +143,57 @@ class MancalaAI:
         H6 = Number of stones in middle of board (neither far nor close)
         H7 = Number of empty pits on my side
         H8 = Number of empty pits on opponent side
-        H9 = Last pit empty
+        H9 = Number of stones on my side
+        H10 = Number of stones on opponent's side
+        H11 = Last pit empty
+        H12 = I won
+        H13 = I lost
+        H14 = Game ended with a draw
+        H15 = I got another turn
+        H16 = Number of pits that can give me an extra turn by landing in my Mancala
+        H17 = Number of pits that can give the opponent an extra turn by landing in his Mancala
+        H19 = Number of pits that can give me a capture
+        H19 = Number of pits that can give opponent a capture
         """
         my_mancala_index = GameState.mancala_index(self.player_num)
-        opponent_mancala_index = GameState.mancala_index(self.game_state.opposite_player(self.player_num))
+        opposite_player = game_state.opposite_player(self.player_num)
+        opponent_mancala_index = GameState.mancala_index(opposite_player)
 
-        H1 = self.my_score() - self.opponent_score()
-        H2 = 48 - self.my_score()
-        H3 = 48 - self.opponent_score()
-        H4 = sum(self.game_state.board[my_mancala_index-2:my_mancala_index])
-        H5 = sum(self.game_state.board[my_mancala_index-6:my_mancala_index-4])
-        H6 = sum(self.game_state.board[my_mancala_index-4:my_mancala_index-2])
-        H7 = len([p for p in self.game_state.board[my_mancala_index-6:my_mancala_index] if p == 0])
-        H8 = len([p for p in self.game_state.board[opponent_mancala_index-6:opponent_mancala_index] if p == 0])
-        H9 = int(self.game_state.board[my_mancala_index] == 0)
+        H1 = game_state.board[my_mancala_index] - game_state.board[opponent_mancala_index]
+        H2 = game_state.board[my_mancala_index] - 24
+        H3 = game_state.board[opponent_mancala_index] - 24
+        H4 = sum(game_state.board[my_mancala_index-2:my_mancala_index])
+        H5 = sum(game_state.board[my_mancala_index-6:my_mancala_index-4])
+        H6 = sum(game_state.board[my_mancala_index-4:my_mancala_index-2])
+        H7 = len([p for p in game_state.board[my_mancala_index-6:my_mancala_index] if p == 0])
+        H8 = len([p for p in game_state.board[opponent_mancala_index-6:opponent_mancala_index] if p == 0])
+        H9 = sum(game_state.board[my_mancala_index-6:my_mancala_index])
+        H10 = sum(game_state.board[opponent_mancala_index-6:opponent_mancala_index])
+        H11 = int(game_state.board[my_mancala_index] == 0)
+        H12 = int(game_state.game_ended and game_state.winner == self.player_num)
+        H13 = int(game_state.game_ended and game_state.winner != self.player_num)
+        H14 = int(game_state.game_ended and game_state.winner == 0)
+        H15 = int(game_state.player_turn == self.player_num)
+        H16 = sum([1 for m in game_state.get_available_moves(self.player_num) if (m+game_state.board[m] == my_mancala_index)])
+        H17 = sum([1 for m in game_state.get_available_moves(opposite_player) if (m+game_state.board[m] == opponent_mancala_index)])
+        H18 = sum([1 for m in game_state.get_available_moves(self.player_num) if game_state.board[(m+game_state.board[m])%14] == 0 and (m+game_state.board[m]%14) < my_mancala_index])
+        H19 = sum([1 for m in game_state.get_available_moves(opposite_player) if game_state.board[(m+game_state.board[m])%14] == 0 and my_mancala_index < (m+game_state.board[m]%14) < opponent_mancala_index])
 
-        pass
+        heuristics = [H1, H2, H3, H4, H5, H6, H7, H8, H9, H10, H11, H12, H13, H14, H15, H16, H17, H18, H19]
+        # heuristics = [H1, H2, H3, H4, H7]
+
+        h_min = min(heuristics)
+        h_max = max(heuristics)
+        # Normalize data
+        heuristics = [(H_i - h_min) / (h_max - h_min) for H_i in heuristics]
+
+        # If we dont have enough weights (for some reason), add default weights of 0 to
+        # the weights list until it is the same length as the heuristics list.
+        for i in range(len(heuristics) - len(self.utility_weights)):
+            self.utility_weights.append(0)
+
+        # print([h*w for h, w in zip(heuristics, self.utility_weights)])
+        return sum([h*w for h, w in zip(heuristics, self.utility_weights)])
 
     def my_score(self):
         return self.game_state.board[GameState.mancala_index(self.player_num)]
@@ -155,13 +202,66 @@ class MancalaAI:
         return self.game_state.board[GameState.mancala_index(self.game_state.opposite_player(self.player_num))]
 
     def get_best_move(self):
-        pass
+        # print(f"I am player {self.player_num}. It is currently player {self.game_state.player_turn}'s turn.")
+        possible_moves = self.game_state.get_available_moves()
+        # self.game_state.print_board()
+        # print(possible_moves)
+        move_evals = []
+        max_eval = -inf
+        best_move = None
+        for m in possible_moves:
+            new_state = copy.deepcopy(self.game_state)
+            new_state.move(m)
+            eval_ = self.minimax(new_state, 2, -inf, inf, True)
+            # print(f"Heuristic: {eval_}")
+            move_evals.append((m, eval_))
+            if eval_ > max_eval:
+                max_eval = eval_
+                best_move = m
+        # print(f"Choose {best_move}")
+        # print(move_evals)
+        # Translate the best move to a 1-6 index
+        best_move = (best_move+1) % 7
+        # if best_move > 6:
+        #     best_move -= 7
+        # best_move += 1
 
-    def possible_moves(self):
-        return self.game_state.get_available_moves()
+        return best_move
 
     def move(self):
         pass
+
+    def minimax(self, game_state, depth, alpha, beta, maximize):
+        if depth == 0 or game_state.game_ended:
+            return self.heuristic(game_state)
+
+        if maximize:
+            max_eval = -inf
+            for m in game_state.get_available_moves():
+                new_state = copy.deepcopy(game_state)
+                new_state.move(m)
+                eval_ = self.minimax(new_state, depth-1, alpha, beta, new_state.player_turn == self.player_num)
+                max_eval = max(max_eval, eval_)
+                alpha = max(alpha, eval_)
+                # Pruning
+                if beta <= alpha:
+                    break
+            return max_eval
+        else:
+            min_eval = inf
+            for m in game_state.get_available_moves():
+                new_state = copy.deepcopy(game_state)
+                new_state.move(m)
+                eval_ = self.minimax(new_state, depth-1, alpha, beta, new_state.player_turn == self.player_num)
+                min_eval = min(min_eval, eval_)
+                beta = min(beta, eval_)
+                # Pruning
+                if beta <= alpha:
+                    break
+            return min_eval
+
+
+
 
 
 

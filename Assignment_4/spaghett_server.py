@@ -10,7 +10,7 @@ from assignment_4 import GameState
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--adversarial', dest='adversarial', action='store_const',
-                    default=True,
+                    default=False, const=True,
                     help='Tells the server that it will host two adversarial '
                          'networks that will train against each other.')
 
@@ -59,7 +59,6 @@ def threaded_client(conn, player):
         data = f"P{player}"
         send(conn, data)
 
-
     # If this thread handles the starting player, send the starting board to the player
     if starting_player == player:
         print("Starting game with player %s" % player)
@@ -69,15 +68,17 @@ def threaded_client(conn, player):
         send(conn, data)
 
     while True:
-        # Receive a move
+        # Receive data
         data = receive(conn)
-        print(f"Received data: {data} from player {player}")
+        print(f"Thread {player} - Received data: {data} from player {player}")
 
         # If the data received was an acknowledge ("OK"), we know that the python player have
         # acknowledged that the previous game had ended and is ready to start a new game
         if data == "OK":
-            # If this thread handles the player that will start next game, send the fresh board to that player
-            if player == starting_player:
+            # If this is adversarial mode and this thread handles the player
+            # that will start next game, send the fresh board to that player.
+            # If this isn't adversarial mode, player 2 will always send the new game to the starting player
+            if (args.adversarial and player == starting_player) or (args.adversarial is False and player == 2):
                 game_state = GameState(copy.copy(start_board), starting_player)
                 data = str(game_state.player_turn) + ''.join([('0' + str(i))[-2:] for i in game_state.board])
                 print(f"Sending new game to player {starting_player}")
@@ -100,13 +101,16 @@ def threaded_client(conn, player):
         game_state.print_board()
 
         if game_state.game_ended:
-            print("\n--- Game ended. Finalizing . . . ---\n")
+            print("\n--- Game ended. Finalizing... ---")
             # Let the player the didn't go first go first the next time
             starting_player = (starting_player % 2) + 1
 
             # If the server is in adversarial configuration we need to send the ending score to both clients.
             # We will let the thread that handles player 1 send out the results
-            if args.adversarial and player == 1:
+            print(f"Adversarial mode = {args.adversarial}")
+            print(f"Player num = {player}")
+            if args.adversarial:
+                print("In adversarial")
                 data = "E " + str(game_state.board[6]) + " " + str(game_state.board[13])
                 print(f"Game ended with scores: player 1 = {game_state.board[6]} and player 2 = {game_state.board[13]}")
                 for i in range(2):
@@ -114,7 +118,8 @@ def threaded_client(conn, player):
                     send(connections[i], data)
                 continue
             # If this isn't adversarial and this thread handles player 1 ...
-            elif player == 1:
+            # elif player == 1:
+            else:
                 # ... it means that we received the last move from the bot
                 # So we want to notify the python player that the game ended and what the final scores were
                 data = "E " + str(game_state.board[6]) + " " + str(game_state.board[13])
@@ -122,6 +127,8 @@ def threaded_client(conn, player):
                 print("Sending end results to player 2")
                 send(connections[1], data)
                 continue
+            # else:
+            #     continue
 
         pt = str(game_state.player_turn)
         board = ''.join([('0' + str(i))[-2:] for i in game_state.board])
@@ -135,17 +142,17 @@ def threaded_client(conn, player):
     conn.close()
 
 
-totalPlayers = 0
+total_players = 0
 threads = []
-while totalPlayers < 2:
+while total_players < 2:
     conn, addr = s.accept()
     connections.append(conn)
     print("Connected to:", addr)
-    totalPlayers += 1
+    total_players += 1
 
-    x = threading.Thread(target=threaded_client, args=(conn, totalPlayers))
+    thread = threading.Thread(target=threaded_client, args=(conn, total_players))
 
-    threads.append(x)
+    threads.append(thread)
 
 for t in threads:
     t.start()
