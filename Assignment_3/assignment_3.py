@@ -2,6 +2,7 @@ import random
 from copy import copy
 from math import sqrt
 import random
+import matplotlib.pyplot as plt
 
 
 class City:
@@ -222,6 +223,7 @@ def create_random_population(cities, population_size):
 
 
 def main():
+    best_in_generations = []
     adaptive_mutation_rate = 0
     breed_offset = 0
     POPULATION_SIZE = 50
@@ -246,7 +248,7 @@ def main():
     prev_best = population[0].fitness
     generations_without_improvement = 0
     # Termination criteria satisfied?
-    while True:
+    while generation < 2500:
         generation += 1
         # Sort the population based on their fitness
         population.sort(key=lambda i: i.fitness)
@@ -274,6 +276,13 @@ def main():
             breed_offset += 1
             # print(f"Adaptive mutation rate: {adaptive_mutation_rate}")
         prev_best = population[0].fitness
+        best_in_generations.append(population[0].fitness)
+
+    plt.plot([i for i in range(len(best_in_generations))],best_in_generations)
+    plt.xlabel('Generation')
+    plt.ylabel('Best distance')
+    plt.title("Genetic algorithm")
+    plt.savefig('graph.png')
 
 
 if __name__ == '__main__':

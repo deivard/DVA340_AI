@@ -1,6 +1,7 @@
 import random
 from math import sqrt
 import copy
+import matplotlib.pyplot as plt
 
 
 class City:
@@ -91,6 +92,7 @@ def update_pheromone(ants, city_edges, evaporation_rate):
 
 
 def main():
+    best_in_iterations = []
     ALPHA = 1.3
     EVAPORATION_RATE = 0.3
     BETA = 1.5
@@ -109,7 +111,7 @@ def main():
 
     calc_distances(city_edges, cities)
 
-    while True:
+    while len(best_in_iterations) < 150:
         antz = initialize_ants(50, city_edges, random_names)
         for _ in range(len(cities)):
             for ant in antz:
@@ -117,9 +119,16 @@ def main():
 
         antz.sort(key=lambda a: a.distance_traveled)
         best_ant = antz[0]
+        best_in_iterations.append(antz[0].distance_traveled)
         print(f"{best_ant.name} is the best ant! Path distance: {best_ant.distance_traveled}")
         update_pheromone(antz, city_edges, EVAPORATION_RATE)
 
+
+    plt.plot([i for i in range(len(best_in_iterations))],best_in_iterations)
+    plt.xlabel('Iteration')
+    plt.ylabel('Best distance')
+    plt.title("ACO")
+    plt.savefig('graph.png')
 
 if __name__ == '__main__':
     main()
