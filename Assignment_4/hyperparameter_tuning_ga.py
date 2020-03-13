@@ -57,7 +57,30 @@ def breed(first, second):
 
 
 def create_initial_population(size, num_weights):
-    return [Individual([0 if (random.random()-0.5) < 0 else 1 for _ in range(num_weights)]) for _ in range(size)]
+    # checkpoint_weights = [
+    # [30.339, 3.867, -16.195, 17.65, 7.989, 17.571, -19.734, 5.618, -23.403, -2.837, -0.659, 7.278, 12.422, -3.089,
+    #  -6.14, -6.158, -14.934, -9.238, -2.517],
+    # [29.901, 4.092, 16.195, 19.606, 8.909, 17.93, -20.77, -5.618, -29.293, -1.116, 2.308, -8.975, -17.374,
+    #  -2.751, -7.788, 4.313, 14.43, -9.238, -3.079],
+    # [29.962, 1.76, -16.195, 19.606, 10.455, -21.762, -20.77, -5.618, -25.757, -1.663, 2.315, -8.246, -14.188,
+    #  3.922, 6.14, -6.158, 13.281, -9.238, -3.079],
+    # [29.962, -1.199, -16.195, -19.606, -8.909, -17.93, -20.77, -5.618, -27.579, -1.116, 2.315, 8.246, -17.374,
+    #  3.922, 7.788, -6.158, 13.281, 9.238, 3.079],
+    # [28.925, 2.198, 15.274, 19.606, -11.344, -17.93, -20.77, -5.618, -26.308, 1.116, 2.315, 5.976, -14.188,
+    #  -5.618, 5.914, 5.206, 13.281, 9.634, -3.079]
+    # ]
+    checkpoint_weights = [
+
+        [3.791, 5.634, 1.54, -3.63, -1.702, 0.134, -10.978, 7.468],
+[5.987, -8.285, -1.54, -4.963, 2.607, 3.155, -11.185, 8.473],
+[0.95, -5.634, 1.54, -3.63, -1.702, -0.208, -13.503, 7.329],
+[3.791, 8.498, 1.949, -5.644, -1.803, 0.324, -9.698, 6.234],
+[5.876, 9.258, 1.998, -5.029, -1.702, 1.315, -11.129, 6.149]
+
+    ]
+
+    return [Individual(checkpoint_weights[i%len(checkpoint_weights)]) for i in range(size)]
+    # return [Individual([0 if (random.random()-0.5) < 0 else 1 for _ in range(num_weights)]) for _ in range(size)]
     # return [Individual([(random.random()-0.5)*10 for _ in range(num_weights)]) for _ in range(size)]
 
 
@@ -102,10 +125,10 @@ MAX_RESPONSE_TIME = 10
 
 
 # GA Variables
-ELITISM = 7
-POPULATION_SIZE = 50
-NUM_ALPHAS = 5
-NUM_WEIGHTS = 19
+ELITISM = 5
+POPULATION_SIZE = 10
+NUM_ALPHAS = 3
+NUM_WEIGHTS = 8
 breed_offset = 0
 mancala_ai = Skynet(2, [])
 population = create_initial_population(POPULATION_SIZE, NUM_WEIGHTS)
