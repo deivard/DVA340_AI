@@ -70,7 +70,7 @@ def threaded_client(conn, player):
     while True:
         # Receive data
         data = receive(conn)
-        print(f"Thread {player} - Received data: {data} from player {player}")
+        # print(f"Thread {player} - Received data: {data} from player {player}")
 
         # If the data received was an acknowledge ("OK"), we know that the python player have
         # acknowledged that the previous game had ended and is ready to start a new game
@@ -80,7 +80,7 @@ def threaded_client(conn, player):
             # If this isn't adversarial mode, player 2 will always send the new game to the starting player
             if (args.adversarial and player == starting_player) or (args.adversarial is False and player == 2):
                 game_state = GameState(copy.copy(start_board), starting_player)
-                data = str(game_state.player_turn) + ''.join([('0' + str(i))[-2:] for i in game_state.board])
+                data = str(starting_player) + ''.join([('0' + str(i))[-2:] for i in game_state.board])
                 print(f"Sending new game to player {starting_player}")
                 send(connections[starting_player - 1], data)
             # If this thread doesn't handle that starting player, just skip this loop iteration
@@ -107,7 +107,7 @@ def threaded_client(conn, player):
 
             # If the server is in adversarial configuration we need to send the ending score to both clients.
             # We will let the thread that handles player 1 send out the results
-            print(f"Adversarial mode = {args.adversarial}")
+            # print(f"Adversarial mode = {args.adversarial}")
             print(f"Player num = {player}")
             if args.adversarial:
                 print("In adversarial")
@@ -135,7 +135,7 @@ def threaded_client(conn, player):
         message = pt + board
 
         # Send the board and player turn to the player that this thread does NOT handle
-        print(f"Sending message to player {game_state.player_turn}. Data: {message}")
+        # print(f"Sending message to player {game_state.player_turn}. Data: {message}")
         send(connections[game_state.player_turn-1], message)
 
     print("Lost connection")

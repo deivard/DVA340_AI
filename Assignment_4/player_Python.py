@@ -30,7 +30,7 @@ s = socket.socket()  # Create a socket object
 pool = ThreadPool(processes=1)
 gameEnd = False
 MAX_RESPONSE_TIME = 5
-mancala_ai = Skynet(2, [2.122, 6.107, 7.174, 2.871, -10.536, 0.319, 4.481, 2.234, -1.054, -4.065, 1.276, -0.328, -5.202, 0.514, 2.14, -2.789, 1.936, -2.266, 2.205])
+mancala_ai = Skynet()
 
 print('The player: ' + playerName + ' starts!')
 s.connect((host, port))

@@ -27,13 +27,13 @@ class Individual:
         self.game_history = []
 
     def mutate(self):
-        for _ in range(10):
-            # Take a random weight and add a random number between -5 and 5 to it
-            random_randint = random.randint(0, len(self.utility_weights) - 1)
-            self.utility_weights[random_randint] = round(self.utility_weights[random_randint] + (random.random() - 0.5)*5, 3)
-            # Take a random weight and change it's sign
-            random_randint = random.randint(0, len(self.utility_weights) - 1)
-            self.utility_weights[random_randint] *= -1
+        # for _ in range(10):
+        # Take a random weight and add a random number between -5 and 5 to it
+        random_randint = random.randint(0, len(self.utility_weights) - 1)
+        self.utility_weights[random_randint] = round(self.utility_weights[random_randint] + (random.random() - 0.5)*5, 3)
+        # Take a random weight and change it's sign
+        random_randint = random.randint(0, len(self.utility_weights) - 1)
+        self.utility_weights[random_randint] *= -1
 
 
 def crossover(first, second):
@@ -47,7 +47,7 @@ def crossover(first, second):
 
 
 def breed(first, second):
-    MUTATION_CHANCE = 1
+    MUTATION_CHANCE = 0.9
 
     offspring = crossover(first, second)
     if random.random() <= MUTATION_CHANCE:
@@ -70,17 +70,16 @@ def create_initial_population(size, num_weights):
     #  -5.618, 5.914, 5.206, 13.281, 9.634, -3.079]
     # ]
     checkpoint_weights = [
-
-        [3.791, 5.634, 1.54, -3.63, -1.702, 0.134, -10.978, 7.468],
-[5.987, -8.285, -1.54, -4.963, 2.607, 3.155, -11.185, 8.473],
-[0.95, -5.634, 1.54, -3.63, -1.702, -0.208, -13.503, 7.329],
-[3.791, 8.498, 1.949, -5.644, -1.803, 0.324, -9.698, 6.234],
-[5.876, 9.258, 1.998, -5.029, -1.702, 1.315, -11.129, 6.149]
-
+        [0.324, -1, 1, 0, -3.292, 1.381, 0, 0.401, 0, 0, 0],
+[0.324, -1, 1, 0, -5.37, -1.381, 0, 0.401, 0, 0, 0],
+[0.324, -1, 1, 0, -3.292, -1.381, 0, 0.401, 0, 0, 0],
+[-0.597, -1, 1, 0, -5.37, -1.381, 0, 0.401, 0, 0, 0],
+[-2.662, -1, 1, 0, -5.37, -1.381, 0, 0.401, 0, 0, 0]
     ]
 
-    return [Individual(checkpoint_weights[i%len(checkpoint_weights)]) for i in range(size)]
-    # return [Individual([0 if (random.random()-0.5) < 0 else 1 for _ in range(num_weights)]) for _ in range(size)]
+
+    # return [Individual(checkpoint_weights[i%len(checkpoint_weights)]) for i in range(size)]
+    return [Individual([0 if (random.random()-0.5) < 0 else 1 for _ in range(num_weights)]) for _ in range(size)]
     # return [Individual([(random.random()-0.5)*10 for _ in range(num_weights)]) for _ in range(size)]
 
 
@@ -128,7 +127,7 @@ MAX_RESPONSE_TIME = 10
 ELITISM = 5
 POPULATION_SIZE = 10
 NUM_ALPHAS = 3
-NUM_WEIGHTS = 8
+NUM_WEIGHTS = 11
 breed_offset = 0
 mancala_ai = Skynet(2, [])
 population = create_initial_population(POPULATION_SIZE, NUM_WEIGHTS)
@@ -150,7 +149,7 @@ if args.adversarial:
 generation = -1
 prev_best = -9001
 generations_without_improvement = 0
-while True:
+while generation < 10000:
     generation += 1
     if generation != 0:
         # Sort the population based on fitness (we want to maximize fitness)
@@ -185,7 +184,7 @@ while True:
         game_values = []
         games_played = 0
         # Set the individual's utility_weights as the utility_weights to use for the Mancala AI
-        mancala_ai.utility_weights = individual.utility_weights
+        mancala_ai.set_utility_weights(individual.utility_weights)
         # Each individual should play 4 games to be evaluated
         while games_played < 2:
             # print(f"Utility weights: {mancala_ai.utility_weights}")
@@ -237,8 +236,8 @@ while True:
                 #     print("Board before updating:")
                 #     mancala_ai.game_state.print_board()
                 mancala_ai.update_state(board, playerTurn)
-                # print("Board after updating:")
-                # mancala_ai.game_state.print_board()
+                print("Board after updating:")
+                mancala_ai.game_state.print_board()
                 move = str(mancala_ai.get_best_move())
                 # print(f"Best move is:{move} (I am player {player_num})")
 
