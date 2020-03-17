@@ -61,7 +61,6 @@ class NeuralNetwork:
         # Learning rate
         self.eta = 1
 
-
     def feed_forward(self, x):
         """
         :param x: The input vector used to calculate a predicted output in the ANN
@@ -71,25 +70,44 @@ class NeuralNetwork:
             raise ValueError(f"The size of the input vector x (size {len(x)}) is not supported in "
                              f"the configuration of this neural network. Input vector must be of"
                              f" size {self.input_vector_size}.")
-        #  Calculate the input for the first hidden layer, which is based on the input layer
-        for neuron_index in range(len(self.layers[0])):
-            bias_input = self.biases[0][neuron_index][0] * self.biases[0][neuron_index][1]
-            inputs = []
-            for i in range(len(x)):
-                inputs.append((x[i] * self.weights[0][i]))
-            # Set the input to the neuron (just for traceability)
-            self.layers[0][neuron_index][0] = inputs
-            # Set the output from the neuron
-            self.layers[0][neuron_index][1] = self.fx_hidden(bias_input + sum(inputs))
+        # #  Calculate the input for the first hidden layer, which is based on the input layer
+        # for neuron_index in range(len(self.layers[0])):
+        #     bias_input = self.biases[0][neuron_index][0] * self.biases[0][neuron_index][1]
+        #     inputs = []
+        #     for i in range(len(x)):
+        #         inputs.append((x[i] * self.weights[0][i]))
+        #     # Set the input to the neuron (just for traceability)
+        #     self.layers[0][neuron_index][0] = inputs
+        #     # Set the output from the neuron
+        #     self.layers[0][neuron_index][1] = self.fx_output(bias_input + sum(inputs))
 
-        for layer in self.layers[1:]:
+        for i, layer in enumerate(self.layers[1:]):
             for neuron_index in range(len(layer)):
-                pass
+                bias_input = self.biases[i][neuron_index][0] * self.biases[i][neuron_index][1]
+                inputs = []
+                # Check if we should use the input layer as input to the first hidden layer
+                if i == 0:
+                    for j in range(len(x)):
+                        inputs.append((x[j] * self.weights[i][j]))
+                # Else we feed forward to the next layer based on the outputs from the previous layer
+                else:
+                    # For each neuron in the previous layer, take the output and multiply by the weight and store it
+                    # as an input to the neuron self.layers[i][neuron_index]
+                    for j in range(len(self.layers[i-1])):
+                        inputs.append((self.layers[i-1][j][1] * self.weights[i][j]))
 
+                # Set the input to the neuron (for traceability)
+                self.layers[i][neuron_index][0] = inputs
+                # Set the output from the neuron
+                self.layers[i][neuron_index][1] = self.fx_output(bias_input + sum(inputs))
+
+    def backpropagation(self):
+        pass
 
 
 def sigmoid(x):
     return 1 / (1 + exp(-x))
+
 
 def d_sigmoid(x):
     fx = sigmoid(x)
@@ -102,16 +120,20 @@ def softmax(x):
     return e_x / e_x.sum(axis=0)
 
 
+def d_softmax(x):
+    return 1
+
 
 if __name__=="__main__":
-    HIDDEN_LAYERS = 2
-    LAYERS = []
+    LAYER_SIZES = [500, 100]
+    # HIDDEN_LAYERS = 2
+    # LAYERS = []
 
     data = pd.read_csv("assignment5.csv").to_numpy()
-    input_vectors = [row[1:]* for row in data]
+    input_vectors = [np.div(row[1:], 255) for row in data]
     labels = [row[0] for row in data]
 
-    big_brain = NeuralNetwork(28*28, sigmoid, None, [500, 10], 2)
+    big_brain = NeuralNetwork(28*28, sigmoid, d_sigmoid, softmax, d_softmax, LAYER_SIZES)
     print(input_vectors)
 
     # print(df.head(5))
